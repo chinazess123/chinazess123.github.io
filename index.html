@@ -233,6 +233,44 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
+        /* Animated messages */
+        .animated-message {
+            position: fixed;
+            color: white;
+            font-size: clamp(24px, 5vw, 36px);
+            font-weight: 600;
+            text-shadow: 0 0 15px rgba(255, 107, 157, 0.8),
+                         0 4px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            z-index: 100;
+        }
+
+        @keyframes floatMessage {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8);
+            }
+            20%, 80% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.8);
+            }
+        }
+
+        /* "Why?" sad messages */
+        .why-message {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 50;
+            animation: fadeIn 0.3s ease-out;
+        }
+
         /* Celebration hearts */
         .celebration-heart {
             position: fixed;
@@ -502,7 +540,7 @@
 
     <!-- Audio element for background music -->
     <audio id="bgMusic" loop>
-        <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_4d8b25d07e.mp3" type="audio/mpeg">
+        <source src="song.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -537,8 +575,9 @@
                 
                 const video = document.createElement('video');
                 video.autoplay = true;
-                video.muted = true; // Start muted to allow autoplay
+                video.muted = true;
                 video.playsInline = true;
+                video.controls = true; // Add controls so you can see if video loads
                 
                 const source = document.createElement('source');
                 source.src = 'IMG_0623.MOV';
@@ -549,20 +588,32 @@
                 overlay.appendChild(container);
                 document.body.appendChild(overlay);
                 
-                // Play video, then unmute
-                video.play().then(() => {
-                    // Unmute after playback starts
-                    video.muted = false;
-                }).catch(e => console.log('Video autoplay prevented'));
+                // Debug logging
+                video.addEventListener('loadeddata', () => {
+                    console.log('Video loaded successfully!');
+                });
                 
-                // Remove after 5 seconds
+                video.addEventListener('error', (e) => {
+                    console.log('Video error:', video.error);
+                });
+                
+                source.addEventListener('error', (e) => {
+                    console.log('Source error - check if IMG_0623.MOV is in the same folder as index.html');
+                });
+                
+                // Play video
+                video.play().catch(e => {
+                    console.log('Video play error:', e);
+                });
+                
+                // Remove after 15 seconds
                 setTimeout(() => {
                     overlay.style.animation = 'fadeOut 0.5s ease-out forwards';
                     setTimeout(() => {
                         overlay.remove();
                         resolve();
                     }, 500);
-                }, 5000);
+                }, 15000);
             });
         }
 
@@ -609,6 +660,16 @@
             // Grow Yes button slightly
             yesButtonScale += 0.1;
             yesBtn.style.transform = `scale(${yesButtonScale})`;
+            
+            // Add "Why?" message at random position
+            const whyMsg = document.createElement('div');
+            whyMsg.classList.add('why-message');
+            whyMsg.textContent = 'Why? 😢';
+            whyMsg.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            whyMsg.style.left = (Math.random() * 80 + 10) + '%';
+            whyMsg.style.top = (Math.random() * 80 + 10) + '%';
+            whyMsg.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+            document.body.appendChild(whyMsg);
         }
 
         // Create confetti hearts
@@ -638,6 +699,9 @@
                 bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
                 musicStarted = true;
             }
+            
+            // Remove all "Why?" messages
+            document.querySelectorAll('.why-message').forEach(msg => msg.remove());
 
             // Play video first
             await playVideo();
@@ -728,10 +792,33 @@
             finalMessage.textContent = "It's official. You're stuck with me now. No refunds. 😌💖";
             document.getElementById('mainContent').appendChild(finalMessage);
 
-            // Add dancing GIF
+            // Add animated messages
+            const messages = [
+                { text: "I love you 💕", delay: 2000, duration: 3000, top: '20%', left: '15%' },
+                { text: "Waiting till summer ☀️💖", delay: 3500, duration: 3000, top: '30%', right: '15%' },
+                { text: "You're my everything 💞", delay: 5000, duration: 3000, top: '70%', left: '20%' },
+                { text: "Can't wait for our adventures 🌟", delay: 6500, duration: 3000, top: '65%', right: '20%' }
+            ];
+
+            messages.forEach(msg => {
+                setTimeout(() => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('animated-message');
+                    messageDiv.textContent = msg.text;
+                    messageDiv.style.top = msg.top;
+                    if (msg.left) messageDiv.style.left = msg.left;
+                    if (msg.right) messageDiv.style.right = msg.right;
+                    messageDiv.style.animation = `floatMessage ${msg.duration}ms ease-in-out`;
+                    document.body.appendChild(messageDiv);
+
+                    setTimeout(() => messageDiv.remove(), msg.duration);
+                }, msg.delay);
+            });
+
+            // Add big heart GIF
             const gifContainer = document.createElement('div');
             gifContainer.classList.add('gif-container');
-            gifContainer.innerHTML = '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDN6Z3k3aGRkdHZ6YzRqY2ZoOHNxYmE4YnZmMm5laXd5aHZqaDh2YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KZQlfylo73AMU/giphy.gif" alt="Dancing hearts">';
+            gifContainer.innerHTML = '<img src="https://media.giphy.com/media/G96zgIcQn1L2xpmdxi/giphy.gif" alt="Big beating heart">';
             document.getElementById('mainContent').appendChild(gifContainer);
         }
 
@@ -781,11 +868,6 @@
         // Initialize
         createFloatingHearts();
         createPhotoSparkles();
-
-        // Set initial position for No button
-        window.addEventListener('load', () => {
-            noBtn.style.position = 'absolute';
-        });
     </script>
 </body>
 </html>
